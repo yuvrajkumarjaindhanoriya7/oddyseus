@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>ODYSSEUS: THE LAST VOYAGE</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Roboto+Mono:wght@400;700&display=swap');
+:root{--gold:#c6a56a;--red:#a52c27;--pale:#d9d2c4}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#18232d;color:var(--pale);font-family:'Roboto Mono',monospace}
+canvas{display:block}
+#vignette{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 35%,rgba(0,0,0,.22) 100%);z-index:2}
+#hud{position:fixed;inset:0;z-index:5;pointer-events:none;display:none}
+.brand{position:absolute;top:18px;left:20px;font:600 17px Cinzel,serif;letter-spacing:3px;color:#d4c09a;text-shadow:0 2px 10px #000}
+#chapter{position:absolute;top:51px;left:21px;font-size:10px;letter-spacing:2px;color:#a69b8c}
+#objective{position:absolute;top:18px;left:50%;transform:translateX(-50%);text-align:center;font-size:11px;letter-spacing:1px;max-width:45vw;color:#d6c9b0;text-shadow:0 2px 8px #000}
+#stats{position:absolute;bottom:20px;left:20px;width:235px;background:linear-gradient(90deg,rgba(0,0,0,.75),transparent);padding:12px}
+.statline{display:flex;justify-content:space-between;font-size:10px;margin:5px 0;letter-spacing:1px}.bar{height:7px;background:#272323;margin-top:4px;border:1px solid #51483b}.fill{height:100%;transition:width .15s}.health{background:linear-gradient(90deg,#751b19,#c54431)}.stamina{background:#b39a65}
+#ammo{position:absolute;bottom:25px;right:24px;text-align:right;font-size:12px;line-height:1.8;text-shadow:0 2px 6px #000}#weapon{font:600 18px Cinzel,serif;color:#c9b17f}
+#crosshair{position:absolute;left:50%;top:50%;width:18px;height:18px;transform:translate(-50%,-50%);opacity:.8}
+#crosshair:before,#crosshair:after{content:"";position:absolute;background:#dfd4bd;box-shadow:0 0 5px #000}
+#crosshair:before{width:1px;height:15px;left:8px;top:1px}#crosshair:after{height:1px;width:15px;top:8px;left:1px}
+#message{position:absolute;top:64%;left:50%;transform:translate(-50%,-50%);font:600 15px Cinzel,serif;letter-spacing:2px;text-align:center;color:#e0c995;text-shadow:0 3px 12px #000;opacity:0;transition:opacity .3s;max-width:85vw}
+#soldiers{position:absolute;right:22px;top:80px;font-size:10px;text-align:right;color:#aaa18e;line-height:1.7}
+#overlay{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;background:linear-gradient(90deg,rgba(0,0,0,.92),rgba(4,8,12,.66)),radial-gradient(ellipse at 70% 40%,#26323a,#030507 65%);padding:22px}
+.panel{max-width:740px;width:100%;padding:clamp(20px,5vw,52px);border-left:2px solid #8f2823;background:linear-gradient(135deg,rgba(15,18,20,.88),rgba(4,5,6,.68));box-shadow:0 0 80px #000}
+.kicker{color:#9f342e;letter-spacing:5px;font-size:10px;margin-bottom:14px}
+h1{font:800 clamp(32px,7vw,65px)/.98 Cinzel,serif;letter-spacing:1px;color:#ded1b7;margin:0 0 15px;text-shadow:0 4px 24px #000}
+.subtitle{font:400 14px/1.8 Cinzel,serif;color:#b8ad9a;max-width:580px}
+.rule{height:1px;background:linear-gradient(90deg,#9b3027,transparent);margin:24px 0}
+#story{font-size:11px;line-height:1.9;color:#b5b0a6;max-width:620px}
+button{font-family:'Roboto Mono',monospace;background:#75221e;color:#f0e6d2;border:1px solid #ad5143;padding:14px 19px;letter-spacing:2px;font-size:11px;cursor:pointer;text-transform:uppercase}
+button:hover{background:#a03229}button:disabled{opacity:.35}
+.controls{font-size:10px;line-height:1.8;color:#827f78;margin-top:18px}
+#toast{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:20;background:#170d0c;color:#f1d8a3;padding:9px 14px;font-size:10px;display:none}
+#mobile{position:fixed;inset:0;z-index:7;display:none;pointer-events:none}
+#stick{position:absolute;left:18px;bottom:24px;width:120px;height:120px;border:1px solid #8e887d55;border-radius:50%;background:#11111144;pointer-events:auto;touch-action:none}
+#nub{position:absolute;width:46px;height:46px;border-radius:50%;background:#c6b38b55;border:1px solid #c6b38b88;left:36px;top:36px}
+.mbtn{position:absolute;pointer-events:auto;border-radius:50%;width:65px;height:65px;padding:0;background:#281b1b99;border:1px solid #c3a77c88;color:#e8d9b6;font-size:9px;letter-spacing:0;touch-action:none}
+#fire{right:20px;bottom:40px}#jump{right:95px;bottom:115px;width:52px;height:52px}#run{right:24px;bottom:120px;width:52px;height:52px}#interact{right:98px;bottom:40px;width:58px;height:58px}
+@media(max-width:650px){.brand{font-size:13px;top:12px;left:12px}#chapter{left:13px;top:36px}#objective{top:15px;font-size:9px;max-width:42vw}#stats{left:8px;bottom:150px;width:155px;padding:7px}.statline{font-size:8px}#ammo{bottom:155px;right:8px;font-size:10px}#soldiers{top:60px;right:9px;font-size:8px}}
+</style>
+</head>
+<body>
+<div id="vignette"></div>
+<div id="hud">
+ <div class="brand">ODYSSEUS <span style="color:#9d3029">/</span> THE LAST VOYAGE</div>
+ <div id="chapter">CHAPTER I · THE CYCLOPS</div>
+ <div id="objective">SURVIVE THE CAVE</div>
+ <div id="soldiers">SOLDIERS: 3</div>
+ <div id="stats">
+  <div class="statline"><span>VITALITY</span><span id="hptext">100 / 100</span></div><div class="bar"><div class="fill health" id="hpbar" style="width:100%"></div></div>
+  <div class="statline"><span>ENDURANCE</span><span id="sttext">100</span></div><div class="bar"><div class="fill stamina" id="stbar" style="width:100%"></div></div>
+ </div>
+ <div id="ammo"><div id="weapon">SPEAR</div><div id="ammotext">∞</div><div id="hint">LMB / TAP TO STRIKE</div></div>
+ <div id="crosshair"></div><div id="message"></div>
+</div>
+<div id="mobile"><div id="stick"><div id="nub"></div></div><button class="mbtn" id="fire">STRIKE</button><button class="mbtn" id="jump">JUMP</button><button class="mbtn" id="run">RUN</button><button class="mbtn" id="interact">USE</button></div>
+<div id="overlay"><div class="panel">
+ <div class="kicker">A DARK MYTHOLOGICAL SURVIVAL CAMPAIGN</div>
+ <h1>ODYSSEUS:<br>THE LAST VOYAGE</h1>
+ <div class="subtitle">Troy has burned. The gods have turned their faces away. A king and his soldiers sail home through a world that wants them dead.</div>
+ <div class="rule"></div>
+ <div id="story">CHAPTER I — THE CYCLOPS<br>Escape the cave of the one-eyed giant.<br><br>CHAPTER II — THE BLACK OCEAN<br>Keep your footing as the sea turns against you.<br><br>CHAPTER III — WRATH OF THE WAVES<br>Outrun a towering tsunami and reach the shore.<br><br>CHAPTER IV — THE DEAD LAND<br>Fight the dead rising from beneath a cursed island.<br><br>CHAPTER V — HOMECOMING<br>Reach Ithaca. Face the last, most painful betrayal.</div>
+ <div class="rule"></div>
+ <button id="start">BEGIN THE VOYAGE</button> <button id="resume" style="display:none">CONTINUE</button>
+ <div class="controls">PC: WASD move · Mouse look · Left click attack · Shift sprint · Space jump · E interact<br>Mobile: drag left pad to move · swipe right side to look · buttons to fight / jump / run</div>
+</div></div><div id="toast"></div>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+const $=id=>document.getElementById(id);
+let scene,camera,renderer,clock,player,worldGroup,enemyGroup,allyGroup,propsGroup;
+let started=false,gameOver=false,chapter=0,hp=100,stamina=100,soldiers=3,coins=0;
+let yaw=0,pitch=0,velocityY=0,onGround=true,keys={},attackCooldown=0,invuln=0,messageTimer=0,shake=0;
+let enemies=[],allies=[],waves=[],obstacles=[],interactables=[],kills=0,chapterTimer=0,worldTime=0,seaMode=false;
+let moveStick={x:0,y:0},touchLook=null,lastTouchX=0,lastTouchY=0;
+const chapterNames=['CHAPTER I · THE CYCLOPS','CHAPTER II · THE BLACK OCEAN','CHAPTER III · WRATH OF THE WAVES','CHAPTER IV · THE DEAD LAND','CHAPTER V · HOMECOMING'];
+const objectives=['DEFEAT THE CYCLOPS AND ESCAPE THE CAVE','CROSS THE BLACK OCEAN','SURVIVE THE TSUNAMI — REACH THE SHORE','CLEAR THE CURSED LAND OF THE DEAD','REACH THE HALL — FACE YOUR SON'];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function mat(color,rough=.9,metal=0){return new THREE.MeshStandardMaterial({color,roughness:rough,metalness:metal})}
+function mesh(geo,material,x,y,z,group=worldGroup){const o=new THREE.Mesh(geo,material);o.position.set(x,y,z);group.add(o);return o}
+function box(x,y,z,w,h,d,m,g=worldGroup){return mesh(new THREE.BoxGeometry(w,h,d),m,x,y,z,g)}
+function sphere(x,y,z,r,m,g=worldGroup){return mesh(new THREE.SphereGeometry(r,12,10),m,x,y,z,g)}
+function cylinder(x,y,z,rt,rb,h,m,g=worldGroup){return mesh(new THREE.CylinderGeometry(rt,rb,h,10),m,x,y,z,g)}
+function say(t,d=2500){$('message').textContent=t;$('message').style.opacity=1;messageTimer=d/1000}
+function toast(t){$('toast').textContent=t;$('toast').style.display='block';setTimeout(()=>$('toast').style.display='none',1700)}
+function init(){
+ scene=new THREE.Scene();scene.background=new THREE.Color(0x536777);scene.fog=new THREE.FogExp2(0x536777,.009);
+ camera=new THREE.PerspectiveCamera(74,innerWidth/innerHeight,.1,500);camera.rotation.order='YXZ';
+ renderer=new THREE.WebGLRenderer({antialias:false,powerPreference:'high-performance'});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.45;document.body.appendChild(renderer.domElement);
+ clock=new THREE.Clock();worldGroup=new THREE.Group();enemyGroup=new THREE.Group();allyGroup=new THREE.Group();propsGroup=new THREE.Group();scene.add(worldGroup,enemyGroup,allyGroup,propsGroup);
+ const hemi=new THREE.HemisphereLight(0xc4d8e8,0x51483c,2.15);scene.add(hemi);
+ const moon=new THREE.DirectionalLight(0xffe2b5,2.1);moon.position.set(-8,20,5);scene.add(moon);
+ const torch=new THREE.PointLight(0xd16a2e,3,15);torch.position.set(0,3,-4);scene.add(torch);
+ makePlayer();buildChapter(0);window.addEventListener('resize',resize);
+ renderer.domElement.addEventListener('click',()=>{if(started&&!isMobile())renderer.domElement.requestPointerLock?.()});
+ document.addEventListener('pointerlockchange',()=>{});
+ document.addEventListener('mousemove',e=>{if(started&&document.pointerLockElement===renderer.domElement){yaw-=e.movementX*.0022;pitch-=e.movementY*.0022;pitch=clamp(pitch,-1.35,1.35)}});
+ document.addEventListener('keydown',e=>{keys[e.code]=true;if(['Space','ArrowUp','ArrowDown'].includes(e.code))e.preventDefault();if(e.code==='Space')jump();if(e.code==='KeyE')interact();if(e.code==='Digit1'){}});
+ document.addEventListener('keyup',e=>keys[e.code]=false);
+ renderer.domElement.addEventListener('mousedown',e=>{if(e.button===0&&started)attack()});
+ setupMobile();animate();
+}
+function isMobile(){return matchMedia('(pointer:coarse)').matches||innerWidth<700}
+function makePlayer(){player=new THREE.Object3D();player.position.set(0,1.7,5);scene.add(player);camera.position.set(0,0,0);player.add(camera);const weapon=new THREE.Group();camera.add(weapon);weapon.position.set(.36,-.34,-.7);
+ const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.018,.025,.9,6),mat(0x503722));shaft.rotation.x=-.4;shaft.position.set(0,-.04,0);weapon.add(shaft);const blade=new THREE.Mesh(new THREE.ConeGeometry(.055,.23,5),mat(0x92918b,.35,.7));blade.rotation.x=-Math.PI/2;blade.position.set(0,.36,-.04);weapon.add(blade);camera.userData.weapon=weapon;}
+function clearGroup(g){while(g.children.length){const o=g.children.pop();if(o.geometry)o.geometry.dispose();if(o.material&&!Array.isArray(o.material))o.material.dispose();}}
+function resetGroups(){clearGroup(worldGroup);clearGroup(enemyGroup);clearGroup(allyGroup);clearGroup(propsGroup);enemies=[];allies=[];waves=[];obstacles=[];interactables=[];}
+function ground(size=100,color=0x222326,y=0){const m=mesh(new THREE.PlaneGeometry(size,size),mat(color),0,y,0);m.rotation.x=-Math.PI/2;m.receiveShadow=true;return m}
+function rock(x,y,z,sx,sy,sz,color=0x292a2d){const o=mesh(new THREE.DodecahedronGeometry(1,0),mat(color),x,y,z);o.scale.set(sx,sy,sz);o.rotation.set(Math.random(),Math.random(),Math.random());o.castShadow=true;return o}
+function tree(x,z){const trunk=cylinder(x,1.2,z,.16,.25,2.4,mat(0x241d18));for(let i=0;i<3;i++){const o=mesh(new THREE.ConeGeometry(1.05-i*.18,2.2,6),mat(0x344b3c),x,2.7+i*.55,z);o.castShadow=true}}
+function createEnemy(type,x,z,hpVal=35){
+ const g=new THREE.Group();enemyGroup.add(g);let bodyMat,headMat;
+ if(type==='cyclops'){bodyMat=mat(0x494238);headMat=mat(0x655448);const torso=sphere(0,2.2,0,.95,bodyMat,g);torso.scale.set(.85,1.25,.55);sphere(0,3.65,0,.78,headMat,g);sphere(0,3.72,-.68,.19,mat(0xc2a86a),g);sphere(0,3.72,-.84,.08,mat(0x130d0b),g);cylinder(-.9,1.8,0,.28,.42,1.4,bodyMat,g);cylinder(.9,1.8,0,.28,.42,1.4,bodyMat,g);cylinder(-.35,.65,0,.3,.4,1.3,bodyMat,g);cylinder(.35,.65,0,.3,.4,1.3,bodyMat,g);g.scale.setScalar(1.35);}
+ else if(type==='son'){bodyMat=mat(0x4c4944);headMat=mat(0x9d8b76);box(0,1.15,0,.65,1.1,.4,bodyMat,g);sphere(0,1.95,0,.28,headMat,g);cylinder(-.44,1.1,0,.11,.13,.95,bodyMat,g);cylinder(.44,1.1,0,.11,.13,.95,bodyMat,g);const sword=box(.58,1.1,-.1,.07,.9,.07,mat(0x9d9d98,.3,.7),g);sword.rotation.z=-.4;}
+ else {bodyMat=mat(type==='soldier' ? 0x484744:0x343a35);headMat=mat(type==='soldier'?0x887665:0x4d6150);box(0,1.1,0,.52,1,.32,bodyMat,g);sphere(0,1.82,0,.25,headMat,g);for(let s of [-1,1]){cylinder(s*.34,1.12,0,.1,.13,.8,bodyMat,g);cylinder(s*.16,.42,0,.12,.14,.7,bodyMat,g);}sphere(0,1.84,-.2,.08,mat(type==='soldier'?0x8d8a80:0x8aab65),g);if(type==='zombie'){const mouth=box(0,1.66,-.235,.15,.04,.02,mat(0x170c0b),g)}}
+ g.position.set(x,0,z);g.userData={type,hp:hpVal,maxHp:hpVal,damage:type==='cyclops'?20:type==='son'?100:8,speed:type==='cyclops'?1.3:type==='son'?2.8:1.6,attack:0,alive:true,phase:Math.random()*6};enemies.push(g);return g;
+}
+function addAlly(x,z){const g=new THREE.Group();allyGroup.add(g);box(0,1.1,0,.45,.95,.3,mat(0x4d4b46),g);sphere(0,1.78,0,.23,mat(0x9a8069),g);cylinder(-.3,1.1,0,.09,.1,.8,mat(0x49443c),g);cylinder(.3,1.1,0,.09,.1,.8,mat(0x49443c),g);const spear=box(.55,1.3,-.1,.04,1.5,.04,mat(0x80603d),g);g.position.set(x,0,z);g.userData={hp:60,attack:0,alive:true};allies.push(g)}
+function lightAt(x,y,z,color,intensity,dist){const l=new THREE.PointLight(color,intensity,dist);l.position.set(x,y,z);propsGroup.add(l);return l}
+function buildChapter(n){
+ resetGroups();chapter=n;chapterTimer=0;kills=0;seaMode=n===1||n===2;
+ $('chapter').textContent=chapterNames[n];$('objective').textContent=objectives[n];$('soldiers').textContent='SOLDIERS: '+soldiers;
+ scene.background=new THREE.Color(n===1||n===2?0x47758d:n===4?0x55483f:n===3?0x66584d:0x65717a);
+ scene.fog=new THREE.FogExp2(n===1||n===2?0x47758d:n===3?0x66584d:0x65717a,n===1||n===2?.004:.008);
+ const moon=new THREE.DirectionalLight(n===1||n===2?0x9edcff:0xffd6a0,n===1||n===2?1.8:1.65);moon.position.set(-8,20,5);scene.add(moon);
+ if(n===0){
+  ground(100,0x252326);for(let i=0;i<30;i++){let x=(Math.random()-.5)*26,z=-Math.random()*45;rock(x,1+Math.random()*2,z,1+Math.random()*2,1+Math.random()*3,1+Math.random()*2,0x29282b)}
+  for(let z=-3;z>-42;z-=7){box(-5,3,z,.7,6,2,mat(0x383336));box(5,3,z,.7,6,2,mat(0x383336))}
+  for(let z=-4;z>-36;z-=10){lightAt(-3,2,z,0xd56b2e,2.5,10);lightAt(3,2,z,0xd56b2e,2.5,10)}
+  createEnemy('cyclops',0,-22,220);addAlly(-2,3);addAlly(2,4);addAlly(-3,6);player.position.set(0,1.7,7);say('THE GIANT HAS HEARD YOU. KEEP YOUR SOLDIERS CLOSE.',4000);
+ }else if(n===1){
+  ground(160,0x244a5c,-1);const sea=mesh(new THREE.PlaneGeometry(180,180,32,32),new THREE.MeshStandardMaterial({color:0x1c526c,roughness:.35,metalness:.25,wireframe:false}),0,-.5,0);sea.rotation.x=-Math.PI/2;sea.userData.water=true;
+  // dark ship deck
+  box(0,.15,0,7,.35,17,mat(0x382a20));for(let z=-7;z<8;z+=1.1)box(0,.35,z,6.6,.06,.06,mat(0x725137));
+  for(let s of [-1,1]){box(s*3.4,.7,0,.2,1.2,17,mat(0x4b3425));for(let z=-7;z<8;z+=2)cylinder(s*2.5,.8,z,.05,.05,1.2,mat(0x785a3b))}
+  const mast=cylinder(0,3,0,.12,.17,6,mat(0x5e432d));box(0,4.1,-.2,3.5,2.2,.08,mat(0x282e32));
+  for(let i=0;i<3;i++)addAlly(-1.8+i*1.8,2+Math.random()*2);
+  player.position.set(0,2,5);say('THE SHORE IS GONE. THE SEA HAS NO MERCY.',3500);
+  for(let i=0;i<12;i++){const p=mesh(new THREE.SphereGeometry(1,8,6),mat(0x2d7188,.3), (Math.random()-.5)*90,-.2,-Math.random()*90);p.scale.set(3,.12,2);waves.push({obj:p,baseY:-.2,phase:Math.random()*6,amp:.8})}
+ }else if(n===2){
+  ground(180,0x244654,-1);const sea=mesh(new THREE.PlaneGeometry(180,180,40,40),new THREE.MeshStandardMaterial({color:0x1c526c,roughness:.25,metalness:.3}),0,-.6,0);sea.rotation.x=-Math.PI/2;
+  box(0,.1,0,7,.3,15,mat(0x382a20));for(let z=-6;z<7;z+=1.2)box(0,.28,z,6.6,.05,.05,mat(0x705036));
+  player.position.set(0,1.8,5);addAlly(-2,3);addAlly(2,4);addAlly(-3,6);
+  const wave=mesh(new THREE.SphereGeometry(1,24,16),new THREE.MeshStandardMaterial({color:0x102d40,roughness:.25,metalness:.15}),0,7,-34);wave.scale.set(24,20,5);waves.push({obj:wave,tsunami:true,phase:0});
+  say('A WALL OF WATER RISES BEHIND YOU. REACH THE SHORE.',4000);
+  // distant shore
+  for(let x=-45;x<=45;x+=5){rock(x,1,-62,3,2,3,0x292d2b);if(Math.random()>.4)tree(x,-58-Math.random()*5)}
+ }else if(n===3){
+  ground(140,0x51463b);for(let i=0;i<55;i++){const x=(Math.random()-.5)*50,z=-Math.random()*65;rock(x,.5+Math.random(),z,1+Math.random()*2,.6+Math.random()*1.7,1+Math.random()*2,Math.random()>.5?0x282625:0x37302a)}
+  for(let x=-25;x<=25;x+=7){box(x,2,-28,1,4,1,mat(0x393432));box(x,4,-28,2,.35,1.4,mat(0x48413a))}
+  for(let i=0;i<12;i++){const x=(Math.random()-.5)*24,z=-15-Math.random()*36;createEnemy('zombie',x,z,40);if(i%3===0)lightAt(x,2,z,0x6b9a51,.8,5)}
+  for(let i=0;i<Math.min(soldiers,3);i++)addAlly((i-1)*2,4+i);player.position.set(0,1.7,7);say('THE EARTH OPENS. THE DEAD REMEMBER YOUR NAME.',3500);
+ }else{
+  ground(100,0x493d35);for(let x=-16;x<=16;x+=4){box(x,3,-18,2,6,2,mat(0x393331));box(x,6,-18,4,.5,3,mat(0x50433a))}
+  for(let z=0;z>-24;z-=5){box(-10,2,z,.8,4,.8,mat(0x38302c));box(10,2,z,.8,4,.8,mat(0x38302c))}
+  for(let i=0;i<4;i++)lightAt((i-1.5)*5,3,-8,0xd16a2e,1.5,9);
+  createEnemy('son',0,-19,1);player.position.set(0,1.7,8);say('ITHACA. HOME AT LAST. WHY DOES THE HALL FEEL COLDER?',4000);
+ }
+ yaw=0;pitch=0;velocityY=0;player.rotation.set(0,0,0);camera.rotation.set(0,0,0);
+}
+function attack(){
+ if(!started||gameOver||attackCooldown>0)return;attackCooldown=.48;
+ const weapon=camera.userData.weapon;if(weapon){weapon.rotation.x=-.9;setTimeout(()=>{if(weapon)weapon.rotation.x=0},130)}
+ let target=null,best=3.3;
+ for(const e of enemies){if(!e.userData.alive)continue;const d=e.position.distanceTo(player.position);if(d<best){const dir=e.position.clone().sub(player.position).normalize();const f=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));if(dir.dot(f)>.15){best=d;target=e}}}
+ if(target){const u=target.userData;u.hp-=chapter===0?28:chapter===4?1:26;target.position.x+=-Math.sin(yaw)*.5;target.position.z+=-Math.cos(yaw)*.5;shake=.12;if(u.hp<=0){u.alive=false;target.visible=false;kills++;if(u.type==='cyclops'){say('THE GIANT FALLS. RUN FOR THE SHORE.',2500);setTimeout(()=>{if(chapter===0)buildChapter(1)},2500)}else if(u.type==='son'){gameOver=true;setTimeout(()=>ending(true),1200)}else{say('THE DEAD FALL SILENT.',800);if(chapter===3&&enemies.every(e=>!e.userData.alive))setTimeout(()=>buildChapter(4),2200)}}}
+ else if(chapter===0){say('YOUR SPEAR CLANGS AGAINST STONE.',650)}
+}
+function jump(){if(onGround&&started&&!gameOver){velocityY=6.3;onGround=false}}
+function interact(){if(!started||gameOver)return;if(chapter===2&&player.position.z<-45){buildChapter(3);return}if(chapter===4&&player.position.z<-12){say('THE KING HAS COME HOME.',1000)}}
+function update(dt){
+ if(!started||gameOver)return;worldTime+=dt;chapterTimer+=dt;attackCooldown=Math.max(0,attackCooldown-dt);invuln=Math.max(0,invuln-dt);stamina=clamp(stamina+(keys.ShiftLeft||keys.ShiftRight?-26:18)*dt,0,100);
+ let forward=0,side=0;if(keys.KeyW||keys.ArrowUp)forward+=1;if(keys.KeyS||keys.ArrowDown)forward-=1;if(keys.KeyA||keys.ArrowLeft)side-=1;if(keys.KeyD||keys.ArrowRight)side+=1;forward+=-moveStick.y;side+=moveStick.x;
+ let sprint=(keys.ShiftLeft||keys.ShiftRight||touchRun)&&stamina>0;let speed=sprint?8:4.4;if(sprint)stamina=Math.max(0,stamina-23*dt);
+ const dir=new THREE.Vector3(side,0,-forward);if(dir.length()>1)dir.normalize();dir.applyAxisAngle(new THREE.Vector3(0,1,0),yaw);
+ player.position.x+=dir.x*speed*dt;player.position.z+=dir.z*speed*dt;
+ velocityY-=15*dt;player.position.y+=velocityY*dt;if(player.position.y<1.7){player.position.y=1.7;velocityY=0;onGround=true}
+ player.position.x=clamp(player.position.x,-55,55);
+ if(chapter===0){player.position.z=clamp(player.position.z,-36,10);if(player.position.z<-34){buildChapter(1)}}
+ if(chapter===1){player.position.x=clamp(player.position.x,-3,3);player.position.z=clamp(player.position.z,-7,8);player.position.y=2+Math.sin(worldTime*1.8)*.25;camera.rotation.z=Math.sin(worldTime*1.7)*.018}
+ if(chapter===2){player.position.x=clamp(player.position.x,-6,6);player.position.z=clamp(player.position.z,-55,8);let wave=waves.find(w=>w.tsunami);if(wave){wave.obj.position.z+=dt*4.2;wave.obj.position.y=7+Math.sin(worldTime*3)*.4;if(wave.obj.position.z>player.position.z-2){hp-=dt*10;shake=.08}if(wave.obj.position.z>2){if(player.position.z<-43){buildChapter(3)}else if(chapterTimer>20){hp-=dt*20}}}if(player.position.z<-51)buildChapter(3)}
+ if(chapter===3){player.position.z=clamp(player.position.z,-66,10);if(chapterTimer>3&&enemies.filter(e=>e.userData.alive&&e.userData.type==='zombie').length<6&&kills<15){createEnemy('zombie',(Math.random()-.5)*24,-10-Math.random()*30,38)}}
+ if(chapter===4){player.position.z=clamp(player.position.z,-18,10);player.position.x=clamp(player.position.x,-15,15);if(player.position.z<-10&&enemies[0]?.userData.alive){if(chapterTimer>5)say('YOUR SON BLOCKS THE WAY.',900)}}
+ // allies move with player and attack nearby threats
+ for(const a of allies){if(!a.userData.alive)continue;const delta=player.position.clone().sub(a.position);const dist=delta.length();if(dist>3.5){delta.y=0;delta.normalize();a.position.addScaledVector(delta,dt*2.2)}a.userData.attack-=dt;let target=enemies.find(e=>e.userData.alive&&e.position.distanceTo(a.position)<2.3);if(target&&a.userData.attack<=0){target.userData.hp-=5;a.userData.attack=1.2;if(target.userData.hp<=0){target.userData.alive=false;target.visible=false;kills++}}}
+ for(const e of enemies){if(!e.userData.alive)continue;const u=e.userData;u.attack-=dt;const d=e.position.distanceTo(player.position);if(u.type==='cyclops'){e.position.x=Math.sin(worldTime*.7)*1.6;if(d>3.2){const v=player.position.clone().sub(e.position);v.y=0;v.normalize();e.position.addScaledVector(v,dt*u.speed)}else if(u.attack<=0&&invuln<=0){hp-=u.damage;invuln=1.2;u.attack=1.5;shake=.35;say('THE CYCLOPS STRIKES YOU!',800)}}
+ else if(u.type==='son'){if(d>1.8){const v=player.position.clone().sub(e.position);v.y=0;v.normalize();e.position.addScaledVector(v,dt*u.speed)}else if(u.attack<=0){hp=0;u.attack=99;gameOver=true;setTimeout(()=>ending(true),900)}}
+ else {if(d>1.5){const v=player.position.clone().sub(e.position);v.y=0;v.normalize();e.position.addScaledVector(v,dt*u.speed)}else if(u.attack<=0&&invuln<=0){hp-=u.damage;invuln=.8;u.attack=1.3;shake=.18}}
+ e.lookAt(player.position.x,e.position.y,player.position.z);
+ }
+ if(chapter===1){for(const w of waves){w.obj.position.y=w.baseY+Math.sin(worldTime*2+w.phase)*w.amp;w.obj.position.x+=Math.sin(worldTime*.4+w.phase)*dt*.3}}
+ if(hp<=0){hp=0;gameOver=true;setTimeout(()=>ending(false),600)}
+ if(messageTimer>0){messageTimer-=dt;if(messageTimer<=0)$('message').style.opacity=0}
+ if(shake>0){camera.position.x=(Math.random()-.5)*shake;camera.position.y=(Math.random()-.5)*shake;shake-=dt*.6}else{camera.position.x=0;camera.position.y=0}
+ camera.rotation.order='YXZ';camera.rotation.y=0;player.rotation.y=yaw;camera.rotation.x=pitch;
+ $('hptext').textContent=Math.ceil(hp)+' / 100';$('hpbar').style.width=hp+'%';$('sttext').textContent=Math.ceil(stamina);$('stbar').style.width=stamina+'%';$('soldiers').textContent='SOLDIERS: '+Math.max(0,soldiers)+' · ENEMIES: '+enemies.filter(e=>e.userData.alive).length;
+}
+function ending(victory){
+ $('hud').style.display='none';$('mobile').style.display='none';$('overlay').style.display='flex';
+ $('story').innerHTML=victory?'<span style="color:#b94b3f">ITHACA — THE FINAL MOMENT</span><br><br>After the Cyclops, the black sea, the towering wave, and the cursed dead, Odysseus finally returns to Ithaca. His son stands before him. No monster remains to fight. No god answers his prayer.<br><br><strong style="color:#e1d0b3">His son strikes. The king falls. The voyage ends at home.</strong><br><br>THE END':'<span style="color:#b94b3f">THE SEA CLAIMS ANOTHER</span><br><br>Odysseus falls far from the home he sought. The surviving soldiers are scattered to the winds. The sea closes over the last king of a ruined war.<br><br><strong style="color:#e1d0b3">THE VOYAGE ENDS IN DARKNESS.</strong>';
+ $('overlay').querySelector('.kicker').textContent=victory?'A KINGDOM WITHOUT A KING':'THE JOURNEY HAS CLAIMED YOU';
+ $('overlay').querySelector('h1').innerHTML=victory?'THE LAST<br>HOMECOMING':'LOST TO<br>THE DARK';
+ $('start').textContent='PLAY AGAIN';$('resume').style.display='none';$('start').onclick=()=>location.reload();
+}
+let touchRun=false;
+function setupMobile(){
+ if(!isMobile())return;$('mobile').style.display='block';
+ const stick=$('stick'),nub=$('nub');stick.addEventListener('pointerdown',e=>{stick.setPointerCapture(e.pointerId);updateStick(e)});stick.addEventListener('pointermove',e=>{if(e.buttons||e.pressure)updateStick(e)});stick.addEventListener('pointerup',()=>{moveStick={x:0,y:0};nub.style.left='36px';nub.style.top='36px'});
+ function updateStick(e){const r=stick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let x=(e.clientX-cx)/48,y=(e.clientY-cy)/48;const l=Math.hypot(x,y);if(l>1){x/=l;y/=l}moveStick={x,y};nub.style.left=(36+x*32)+'px';nub.style.top=(36+y*32)+'px'}
+ document.addEventListener('touchstart',e=>{for(const t of e.changedTouches){if(t.clientX>innerWidth*.43&&!e.target.closest('button')){touchLook=t.identifier;lastTouchX=t.clientX;lastTouchY=t.clientY}}},{passive:true});
+ document.addEventListener('touchmove',e=>{for(const t of e.changedTouches){if(t.identifier===touchLook){yaw-=(t.clientX-lastTouchX)*.006;pitch=clamp(pitch-(t.clientY-lastTouchY)*.006,-1.3,1.3);lastTouchX=t.clientX;lastTouchY=t.clientY}}},{passive:true});
+ document.addEventListener('touchend',e=>{for(const t of e.changedTouches)if(t.identifier===touchLook)touchLook=null},{passive:true});
+ $('fire').addEventListener('pointerdown',e=>{e.preventDefault();attack()});$('jump').addEventListener('pointerdown',e=>{e.preventDefault();jump()});$('run').addEventListener('pointerdown',e=>{e.preventDefault();touchRun=true});$('run').addEventListener('pointerup',()=>touchRun=false);$('run').addEventListener('pointercancel',()=>touchRun=false);$('interact').addEventListener('pointerdown',e=>{e.preventDefault();interact()});
+}
+function resize(){if(!camera||!renderer)return;camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}
+function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.04);update(dt);if(renderer&&scene&&camera)renderer.render(scene,camera)}
+$('start').addEventListener('click',()=>{if(gameOver)return;started=true;$('overlay').style.display='none';$('hud').style.display='block';if(isMobile())$('mobile').style.display='block';else renderer.domElement.requestPointerLock?.();say('THE GODS ARE SILENT. MOVE.',2200)});
+$('resume').addEventListener('click',()=>{$('overlay').style.display='none';started=true});
+init();
+</script>
+</body>
+</html>
